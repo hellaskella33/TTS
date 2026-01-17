@@ -12,22 +12,42 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check for GPU support
-if docker run --rm --gpus all nvidia/cuda:12.1.0-base-ubuntu22.04 nvidia-smi > /dev/null 2>&1; then
-    echo "✅ GPU support detected"
+# Detect docker compose command (V2 vs V1)
+if docker compose version > /dev/null 2>&1; then
+    DOCKER_COMPOSE="docker compose"
+    echo "✅ Using Docker Compose V2"
+elif command -v docker-compose > /dev/null 2>&1; then
+    DOCKER_COMPOSE="docker-compose"
+    echo "✅ Using Docker Compose V1"
 else
-    echo "⚠️  Warning: GPU support not detected. Service will run on CPU (slower)."
+    echo "❌ Error: Docker Compose not found. Please install Docker Desktop or docker-compose."
+    exit 1
+fi
+
+# Check for GPU support and select appropriate compose file
+COMPOSE_FILE="docker-compose.yml"
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "ℹ️  Running on macOS - Using CPU-only configuration"
+    COMPOSE_FILE="docker-compose.cpu.yml"
+    echo ""
+elif docker run --rm --gpus all nvidia/cuda:12.1.0-base-ubuntu22.04 nvidia-smi > /dev/null 2>&1; then
+    echo "✅ GPU support detected - Using GPU-accelerated configuration"
+    COMPOSE_FILE="docker-compose.yml"
+else
+    echo "⚠️  Warning: GPU support not detected. Using CPU configuration (slower)."
     echo "   To enable GPU, install nvidia-container-toolkit on the host."
+    COMPOSE_FILE="docker-compose.cpu.yml"
     echo ""
 fi
 
 # Build and start
 echo "📦 Building Docker image (this may take a few minutes on first run)..."
-docker-compose build
+$DOCKER_COMPOSE -f $COMPOSE_FILE build
 
 echo ""
 echo "🎬 Starting API service..."
-docker-compose up -d
+$DOCKER_COMPOSE -f $COMPOSE_FILE up -d
 
 echo ""
 echo "⏳ Waiting for service to be healthy..."
@@ -43,8 +63,8 @@ for i in {1..30}; do
         echo "🎤 Available voices: http://localhost:8000/voices"
         echo "❤️  Health check: http://localhost:8000/health"
         echo ""
-        echo "📊 View logs: docker-compose logs -f"
-        echo "🛑 Stop service: docker-compose down"
+        echo "📊 View logs: $DOCKER_COMPOSE -f $COMPOSE_FILE logs -f"
+        echo "🛑 Stop service: $DOCKER_COMPOSE -f $COMPOSE_FILE down"
         echo ""
         exit 0
     fi
@@ -53,5 +73,5 @@ for i in {1..30}; do
 done
 
 echo ""
-echo "⚠️  Service started but health check failed. Check logs with: docker-compose logs"
+echo "⚠️  Service started but health check failed. Check logs with: $DOCKER_COMPOSE -f $COMPOSE_FILE logs"
 exit 1

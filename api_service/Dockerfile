@@ -33,8 +33,40 @@ COPY setup.py /app/
 COPY README.md /app/
 COPY requirements.txt /app/
 
-# Install TTS library in development mode
-RUN pip install --no-cache-dir -e .
+# Install core TTS dependencies (English-only, skip Japanese/Bangla/Korean)
+RUN pip install --no-cache-dir \
+    numpy>=1.24.3 \
+    cython>=0.29.30 \
+    scipy>=1.11.2 \
+    torch>=2.1 \
+    torchaudio \
+    soundfile>=0.12.0 \
+    librosa>=0.10.0 \
+    scikit-learn>=1.3.0 \
+    numba>=0.57.0 \
+    inflect>=5.6.0 \
+    tqdm>=4.64.1 \
+    anyascii>=0.3.0 \
+    pyyaml>=6.0 \
+    fsspec>=2023.6.0 \
+    aiohttp>=3.8.1 \
+    packaging>=23.1 \
+    mutagen==1.47.0 \
+    pysbd>=0.3.4 \
+    umap-learn>=0.5.1 \
+    "pandas>=1.4,<2.0" \
+    matplotlib>=3.7.0 \
+    trainer>=0.0.36 \
+    coqpit>=0.0.16 \
+    einops>=0.6.0 \
+    transformers>=4.33.0 \
+    encodec>=0.1.1 \
+    unidecode>=1.3.2 \
+    num2words \
+    nltk
+
+# Install TTS library in development mode (without pulling extra deps)
+RUN pip install --no-cache-dir --no-deps -e .
 
 # Copy API service code
 COPY api_service/ /app/api_service/
