@@ -1,0 +1,19 @@
+# FastAPI TTS Service Requirements
+# Core API framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+
+# Audio processing
+pydub==0.25.1
+
+# HTTP client for health checks
+requests==2.31.0
+
+# TTS dependencies (will be installed from parent repo)
+# These are the minimal additional requirements beyond what TTS already needs
+torch>=2.1.0
+torchaudio>=2.1.0
+
+# Note: The main TTS library will be installed via "pip install -e ." in Dockerfile
+# which includes all TTS dependencies from the parent requirements.txt

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  tts-api:
+    build:
+      context: ..
+      dockerfile: api_service/Dockerfile
+    container_name: tts-api-service
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONUNBUFFERED=1
+      - COQUI_TOS_AGREED=1
+    volumes:
+      # Optional: Mount voices directory for custom reference audio
+      - ./voices:/app/api_service/voices
+      # Optional: Mount for model caching (to avoid re-downloading)
+      - tts-models-cache:/root/.local/share/tts
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  tts-models-cache:
+    driver: local
