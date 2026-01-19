@@ -6,6 +6,9 @@ set -e
 echo "🚀 Starting TTS API Service..."
 echo ""
 
+TTS_API_PORT="${TTS_API_PORT:-8000}"
+export TTS_API_PORT
+
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
     echo "❌ Error: Docker is not running. Please start Docker first."
@@ -42,6 +45,7 @@ else
 fi
 
 # Build and start
+echo "ℹ️  Using host port ${TTS_API_PORT}"
 echo "📦 Building Docker image (this may take a few minutes on first run)..."
 $DOCKER_COMPOSE -f $COMPOSE_FILE build
 
@@ -55,13 +59,13 @@ sleep 10
 
 # Wait for health check
 for i in {1..30}; do
-    if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+    if curl -f http://localhost:${TTS_API_PORT}/health > /dev/null 2>&1; then
         echo ""
         echo "✅ Service is ready!"
         echo ""
-        echo "📖 API Documentation: http://localhost:8000/docs"
-        echo "🎤 Available voices: http://localhost:8000/voices"
-        echo "❤️  Health check: http://localhost:8000/health"
+        echo "📖 API Documentation: http://localhost:${TTS_API_PORT}/docs"
+        echo "🎤 Available voices: http://localhost:${TTS_API_PORT}/voices"
+        echo "❤️  Health check: http://localhost:${TTS_API_PORT}/health"
         echo ""
         echo "📊 View logs: $DOCKER_COMPOSE -f $COMPOSE_FILE logs -f"
         echo "🛑 Stop service: $DOCKER_COMPOSE -f $COMPOSE_FILE down"

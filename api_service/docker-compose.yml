@@ -4,17 +4,11 @@ services:
   tts-api:
     build:
       context: ..
-      dockerfile: api_service/Dockerfile
+      dockerfile: api_service/Dockerfile.gpu
     container_name: tts-api-service
+    gpus: all
     ports:
-      - "8000:8000"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+      - "${TTS_API_PORT:-8000}:8000"
     environment:
       - CUDA_VISIBLE_DEVICES=0
       - PYTHONUNBUFFERED=1
@@ -26,7 +20,7 @@ services:
       - tts-models-cache:/root/.local/share/tts
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:8000/health', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
