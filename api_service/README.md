@@ -425,4 +425,4 @@ For TTS model issues:
 
 ---
 
-**Made for YouTube Video Generation** 🎬 | **Powered by Coqui TTS** 🐸
+**Made for YouTube Video Generation** | **Powered by Coqui TTS**

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Stop script for TTS API Service
 
-echo "🛑 Stopping TTS API Service..."
+echo "Stopping TTS API Service..."
 
 # Detect docker compose command
 if docker compose version > /dev/null 2>&1; then
@@ -9,7 +9,7 @@ if docker compose version > /dev/null 2>&1; then
 elif command -v docker-compose > /dev/null 2>&1; then
     DOCKER_COMPOSE="docker-compose"
 else
-    echo "❌ Error: Docker Compose not found"
+    echo "Error: Docker Compose not found"
     exit 1
 fi
 
@@ -28,4 +28,4 @@ fi
 # Stop and remove containers
 $DOCKER_COMPOSE -f $COMPOSE_FILE down
 
-echo "✅ Service stopped successfully"
+echo "Service stopped successfully"
