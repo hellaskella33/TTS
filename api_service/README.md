@@ -56,14 +56,16 @@ docker run --rm --gpus all nvidia/cuda:12.1.0-base-ubuntu22.04 nvidia-smi
 ```bash
 cd api_service
 
-# Build the Docker image
-docker-compose build
+# GPU (Windows/Linux - WSL2)
+docker compose up -d --build
 
-# Start the service
-docker-compose up -d
+# CPU (macOS)
+docker compose -f docker-compose.cpu.yml up -d --build
 
 # Check logs
-docker-compose logs -f
+docker compose logs -f
+# or (CPU)
+docker compose -f docker-compose.cpu.yml logs -f
 
 # Check health
 curl http://localhost:8000/health

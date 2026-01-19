@@ -1,18 +1,17 @@
-# Production-ready Dockerfile for TTS API Service
-# Following FastAPI Docker best practices 2026
+# Production-ready GPU Dockerfile for TTS API Service
+# Uses CUDA 12.1 runtime for NVIDIA GPUs (WSL2/Linux)
 
-# Use Python slim image for smaller size (156MB vs 259MB with full image)
-FROM python:3.10-slim as base
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04 as base
 
-# Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     COQUI_TOS_AGREED=1
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
     gcc \
     g++ \
     make \
@@ -23,7 +22,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python3 -m pip install --upgrade pip setuptools wheel
+
 WORKDIR /app
 
 # ============================================
@@ -31,32 +32,20 @@ WORKDIR /app
 # ============================================
 FROM base as builder
 
-# Enable pip cache for faster rebuilds with BuildKit
 ENV PIP_NO_CACHE_DIR=0
 
-# Upgrade pip, setuptools, wheel
+COPY api_service/requirements.gpu.txt /app/requirements.gpu.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --upgrade pip setuptools wheel
-
-# Copy requirements first for Docker layer caching
-COPY api_service/requirements.txt /app/requirements.txt
-
-# Install all dependencies with pinned versions
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --user -r /app/requirements.txt
+    python3 -m pip install --user -r /app/requirements.gpu.txt
 
 # ============================================
 # Final stage - Copy only necessary files
 # ============================================
 FROM base
 
-# Copy Python packages from builder
 COPY --from=builder /root/.local /root/.local
-
-# Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
 
-# Copy TTS library source code
 COPY TTS/ /app/TTS/
 COPY setup.py /app/
 COPY README.md /app/
@@ -65,21 +54,15 @@ COPY requirements.dev.txt /app/
 COPY requirements.notebooks.txt /app/
 COPY requirements.ja.txt /app/
 
-# Install TTS library (no extra deps, use what we already installed)
-RUN pip install --no-cache-dir --no-deps .
+RUN python3 -m pip install --no-cache-dir --no-deps .
 
-# Copy API service code
 COPY api_service/app.py /app/api_service/app.py
 
-# Create voices directory
 RUN mkdir -p /app/api_service/voices
 
-# Expose port
 EXPOSE 8000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health', timeout=5)" || exit 1
+    CMD python3 -c "import requests; requests.get('http://localhost:8000/health', timeout=5)" || exit 1
 
-# Run with single worker (recommended for CPU-bound tasks like TTS)
 CMD ["uvicorn", "api_service.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

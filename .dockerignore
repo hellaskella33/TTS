@@ -7,3 +7,14 @@ tests/outputs/*
 tests/train_outputs/*
 __pycache__/
 *.pyc
+docs/
+notebooks/
+recipes/
+images/
+tests/
+dockerfiles/
+scripts/
+*.md
+!README.md
+api_service/voices/
+api_service/.env

@@ -1,5 +1,7 @@
-# FastAPI TTS Service Requirements (English-only, production-ready)
+# FastAPI TTS Service Requirements (GPU CUDA 12.1, production-ready)
 # Pin all versions for reproducible builds - following best practices 2026
+
+--extra-index-url https://download.pytorch.org/whl/cu121
 
 # Core API framework
 fastapi==0.109.0
@@ -17,8 +19,8 @@ numpy==1.24.3
 pandas==1.5.3
 cython==0.29.37
 scipy==1.11.4
-torch==2.2.2
-torchaudio==2.2.2
+torch==2.2.2+cu121
+torchaudio==2.2.2+cu121
 networkx==2.8.8
 soundfile==0.12.1
 librosa==0.10.1
