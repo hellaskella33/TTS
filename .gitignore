@@ -177,3 +177,4 @@ api_service/*.wav
 api_service/voices/*
 api_service/.env
 api_service/__pycache__/
+.claude
