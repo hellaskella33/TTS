@@ -316,6 +316,10 @@ API_WORKERS=1
 
 # TTS Configuration
 COQUI_TOS_AGREED=1
+
+# Chunking for long scripts (optional)
+TTS_CHUNK_SIZE=800
+TTS_CHUNK_SILENCE_MS=0
 ```
 
 ### Custom Voice References
