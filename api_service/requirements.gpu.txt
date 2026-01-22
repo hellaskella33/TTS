@@ -19,7 +19,7 @@ paramiko==3.4.0
 upstash-redis==1.0.0
 
 # Core TTS dependencies - PINNED VERSIONS for compatibility
-numpy==1.24.3
+numpy==1.22.0
 pandas==1.5.3
 cython==0.29.37
 scipy==1.11.4
