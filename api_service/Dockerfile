@@ -2,7 +2,7 @@
 # Following FastAPI Docker best practices 2026
 
 # Use Python slim image for smaller size (156MB vs 259MB with full image)
-FROM python:3.10-slim as base
+FROM python:3.10-slim AS base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -29,7 +29,7 @@ WORKDIR /app
 # ============================================
 # Builder stage - Install Python dependencies
 # ============================================
-FROM base as builder
+FROM base AS builder
 
 # Enable pip cache for faster rebuilds with BuildKit
 ENV PIP_NO_CACHE_DIR=0
@@ -39,7 +39,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --upgrade pip setuptools wheel
 
 # Copy requirements first for Docker layer caching
-COPY api_service/requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 
 # Install all dependencies with pinned versions
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -56,20 +56,9 @@ COPY --from=builder /root/.local /root/.local
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
 
-# Copy TTS library source code
-COPY TTS/ /app/TTS/
-COPY setup.py /app/
-COPY README.md /app/
-COPY requirements.txt /app/
-COPY requirements.dev.txt /app/
-COPY requirements.notebooks.txt /app/
-COPY requirements.ja.txt /app/
-
-# Install TTS library (no extra deps, use what we already installed)
-RUN pip install --no-cache-dir --no-deps .
-
 # Copy API service code
-COPY api_service/app.py /app/api_service/app.py
+COPY app.py /app/api_service/app.py
+COPY tts_gpu_worker.py /app/api_service/tts_gpu_worker.py
 
 # Create voices directory
 RUN mkdir -p /app/api_service/voices

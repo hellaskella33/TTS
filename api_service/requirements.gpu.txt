@@ -1,7 +1,8 @@
 # FastAPI TTS Service Requirements (GPU CUDA 12.1, production-ready)
 # Pin all versions for reproducible builds - following best practices 2026
 
---extra-index-url https://download.pytorch.org/whl/cu121
+--index-url https://download.pytorch.org/whl/cu121
+--extra-index-url https://pypi.org/simple
 
 # Core API framework
 fastapi==0.109.0
@@ -13,6 +14,9 @@ pydub==0.25.1
 
 # HTTP client
 requests==2.31.0
+TTS==0.22.0
+paramiko==3.4.0
+upstash-redis==1.0.0
 
 # Core TTS dependencies - PINNED VERSIONS for compatibility
 numpy==1.24.3

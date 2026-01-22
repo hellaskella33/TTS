@@ -1,7 +1,7 @@
 # Production-ready GPU Dockerfile for TTS API Service
 # Uses CUDA 12.1 runtime for NVIDIA GPUs (WSL2/Linux)
 
-FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04 as base
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04 AS base
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -30,11 +30,11 @@ WORKDIR /app
 # ============================================
 # Builder stage - Install Python dependencies
 # ============================================
-FROM base as builder
+FROM base AS builder
 
 ENV PIP_NO_CACHE_DIR=0
 
-COPY api_service/requirements.gpu.txt /app/requirements.gpu.txt
+COPY requirements.gpu.txt /app/requirements.gpu.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     python3 -m pip install --user -r /app/requirements.gpu.txt
 
@@ -46,17 +46,8 @@ FROM base
 COPY --from=builder /root/.local /root/.local
 ENV PATH=/root/.local/bin:$PATH
 
-COPY TTS/ /app/TTS/
-COPY setup.py /app/
-COPY README.md /app/
-COPY requirements.txt /app/
-COPY requirements.dev.txt /app/
-COPY requirements.notebooks.txt /app/
-COPY requirements.ja.txt /app/
-
-RUN python3 -m pip install --no-cache-dir --no-deps .
-
-COPY api_service/app.py /app/api_service/app.py
+COPY app.py /app/api_service/app.py
+COPY tts_gpu_worker.py /app/api_service/tts_gpu_worker.py
 
 RUN mkdir -p /app/api_service/voices
 

@@ -11,6 +11,9 @@ pydub==0.25.1
 
 # HTTP client
 requests==2.31.0
+TTS==0.22.0
+paramiko==3.4.0
+upstash-redis==1.0.0
 
 # Core TTS dependencies - PINNED VERSIONS for compatibility
 numpy==1.24.3

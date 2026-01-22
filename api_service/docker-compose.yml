@@ -3,8 +3,8 @@ version: '3.8'
 services:
   tts-api:
     build:
-      context: ..
-      dockerfile: api_service/Dockerfile.gpu
+      context: .
+      dockerfile: Dockerfile.gpu
     container_name: tts-api-service
     gpus: all
     ports:

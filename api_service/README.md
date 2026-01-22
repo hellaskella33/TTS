@@ -73,6 +73,31 @@ curl http://localhost:8000/health
 
 The API will be available at `http://localhost:8000`
 
+## GPU Worker (Vast.ai)
+
+The GPU worker consumes Upstash Redis jobs, calls this API for audio, and uploads results to the VPS via SFTP.
+
+**Required env vars:**
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+- `COQUI_TTS_SERVICE_URL` (example: `http://localhost:8000`)
+- `VPS_HOST`
+- `VPS_USER`
+- `VPS_SSH_KEY_PATH`
+
+**Optional env vars:**
+- `TTS_JOBS_QUEUE` (default: `tts:jobs`)
+- `TTS_RESULTS_QUEUE` (default: `tts:results`)
+- `IDLE_SHUTDOWN_SECONDS` (default: `120`)
+- `VPS_BASE_DIR` (used when `audio_path` is relative)
+- `VPS_PORT` (default: `22`)
+- `POLL_INTERVAL_SECONDS` (default: `2`)
+
+**Run:**
+```bash
+python tts_gpu_worker.py
+```
+
 ## API Documentation
 
 ### Interactive API Docs
