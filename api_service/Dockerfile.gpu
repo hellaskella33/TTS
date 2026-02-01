@@ -39,7 +39,8 @@ RUN pip3 install --no-cache-dir \
     pydub==0.25.1 \
     requests==2.31.0 \
     paramiko==3.4.0 \
-    upstash-redis==1.0.0
+    upstash-redis==1.0.0 \
+    whisperx
 
 RUN mkdir -p /root/api_service/voices
 

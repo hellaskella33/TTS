@@ -51,6 +51,9 @@ einops==0.7.0
 transformers==4.36.2
 encodec==0.1.1
 
+# WhisperX alignment for word timestamps
+whisperx
+
 # Text processing (English only)
 unidecode==1.3.7
 num2words==0.5.13

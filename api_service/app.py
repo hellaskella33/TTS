@@ -20,6 +20,7 @@ from pydub import AudioSegment
 import hashlib
 import re
 import threading
+import numpy as np
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,6 +51,55 @@ DEFAULT_CHUNK_SIZE = max(1, _int_env("TTS_CHUNK_SIZE", 800))
 DEFAULT_CHUNK_SILENCE_MS = max(0, _int_env("TTS_CHUNK_SILENCE_MS", 0))
 tts_lock = threading.Lock()
 
+# WhisperX alignment (lazy-loaded)
+whisperx_model = None
+align_model_cache: dict = {}
+
+
+def _get_whisperx_model():
+    global whisperx_model
+    if whisperx_model is None:
+        import whisperx
+        whisperx_model = whisperx.load_model(
+            "large-v2", device, compute_type="float16" if device == "cuda" else "int8",
+            vad_method="silero",
+            vad_options={"chunk_size": 30, "vad_onset": 0.5, "vad_offset": 0.363},
+        )
+    return whisperx_model
+
+
+def _run_alignment(audio_path: str, language: str = "en") -> list[dict]:
+    """Run WhisperX transcription + forced alignment, return word timestamps."""
+    import whisperx
+
+    model = _get_whisperx_model()
+    result = model.transcribe(audio_path, language=language)
+
+    lang = result.get("language", language)
+    if lang not in align_model_cache:
+        align_model_cache[lang] = whisperx.load_align_model(
+            language_code=lang, device=device
+        )
+    align_model, metadata = align_model_cache[lang]
+
+    aligned = whisperx.align(
+        result.get("segments", []),
+        align_model, metadata, audio_path, device,
+        return_char_alignments=False,
+    )
+
+    timestamps = []
+    for item in aligned.get("word_segments") or []:
+        word = item.get("word") or item.get("text")
+        start, end = item.get("start"), item.get("end")
+        if word is not None and start is not None and end is not None:
+            timestamps.append({
+                "word": str(word).strip(),
+                "start": round(float(start), 3),
+                "end": round(float(end), 3),
+            })
+    return timestamps
+
 # Pydantic models for request/response
 class TTSRequest(BaseModel):
     text: str = Field(..., min_length=1, description="Text to convert to speech")
@@ -67,6 +117,7 @@ class TTSResponse(BaseModel):
     voice_used: str
     text_length: int
     generation_time_ms: float
+    word_timestamps: Optional[list[dict]] = None
 
 class VoiceInfo(BaseModel):
     voice_id: str
@@ -253,6 +304,22 @@ def generate_audio(request: TTSRequest):
             sample_rate=request.sample_rate
         )
 
+        # Export a WAV for alignment (WhisperX needs a file path)
+        word_timestamps = None
+        align_wav_path = None
+        try:
+            align_wav = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+            align_wav_path = align_wav.name
+            align_wav.close()
+            audio.export(align_wav_path, format="wav")
+            word_timestamps = _run_alignment(align_wav_path)
+            logger.info(f"WhisperX alignment produced {len(word_timestamps)} word timestamps")
+        except Exception as e:
+            logger.warning(f"WhisperX alignment failed (non-fatal): {e}")
+        finally:
+            if align_wav_path and os.path.exists(align_wav_path):
+                os.remove(align_wav_path)
+
         # Export to requested format
         audio_buffer = io.BytesIO()
         if request.output_format == "mp3":
@@ -279,7 +346,8 @@ def generate_audio(request: TTSRequest):
             duration_seconds=duration,
             voice_used=request.voice_name,
             text_length=len(request.text),
-            generation_time_ms=generation_time
+            generation_time_ms=generation_time,
+            word_timestamps=word_timestamps,
         )
 
     except Exception as e:
