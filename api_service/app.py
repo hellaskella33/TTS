@@ -51,29 +51,16 @@ DEFAULT_CHUNK_SIZE = max(1, _int_env("TTS_CHUNK_SIZE", 800))
 DEFAULT_CHUNK_SILENCE_MS = max(0, _int_env("TTS_CHUNK_SILENCE_MS", 0))
 tts_lock = threading.Lock()
 
-# WhisperX alignment (lazy-loaded)
+# WhisperX alignment (loaded at startup)
+import whisperx
+
 whisperx_model = None
 align_model_cache: dict = {}
 
 
-def _get_whisperx_model():
-    global whisperx_model
-    if whisperx_model is None:
-        import whisperx
-        whisperx_model = whisperx.load_model(
-            "large-v2", device, compute_type="float16" if device == "cuda" else "int8",
-            vad_method="silero",
-            vad_options={"chunk_size": 30, "vad_onset": 0.5, "vad_offset": 0.363},
-        )
-    return whisperx_model
-
-
 def _run_alignment(audio_path: str, language: str = "en") -> list[dict]:
     """Run WhisperX transcription + forced alignment, return word timestamps."""
-    import whisperx
-
-    model = _get_whisperx_model()
-    result = model.transcribe(audio_path, language=language)
+    result = whisperx_model.transcribe(audio_path, language=language)
 
     lang = result.get("language", language)
     if lang not in align_model_cache:
@@ -217,6 +204,21 @@ async def startup_event():
         logger.info(f"Model loaded successfully with {len(tts_model.speakers)} voices")
     except Exception as e:
         logger.error(f"Failed to load TTS model: {str(e)}")
+        raise
+
+    # Load WhisperX model for word-level alignment
+    global whisperx_model
+    try:
+        logger.info("Loading WhisperX large-v2 model...")
+        whisperx_model = whisperx.load_model(
+            "large-v2", device,
+            compute_type="float16" if device == "cuda" else "int8",
+            vad_method="silero",
+            vad_options={"chunk_size": 30, "vad_onset": 0.5, "vad_offset": 0.363},
+        )
+        logger.info("WhisperX model loaded successfully")
+    except Exception as e:
+        logger.error(f"Failed to load WhisperX model: {str(e)}")
         raise
 
 @app.get("/", response_class=JSONResponse)
